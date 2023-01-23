@@ -1,30 +1,29 @@
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView
-from django import shortcuts
-# Project
+from cart.forms import CartAddProductForm
 from .models import Category, Product
 
 
-class ProductListView(ListView):
-    queryset = Category.objects.all()
-    template_name = 'product/list.html'
+def product_list(request, category_slug=None):
+    category = None
+    categories = Category.objects.all()
+    products = Product.objects.filter(available=True)
+    if category_slug:
+        category = get_object_or_404(Category, slug=category_slug)
+        products = products.filter(category=category)
+    return render(request,
+                  'shop/product/list.html',
+                  {'category': category,
+                   'categories': categories,
+                   'products': products})
 
-    def get(self, request, category_slug=None):
-        self.category = None
-        self.products = Product.objects.filter(available=True)
-        if category_slug:
-            self.category = get_object_or_404(self.queryset, slug=category_slug)
-            self.products = self.products.filter(category=self.category)
-        context = {'category': self.category, 'categories': self.queryset, 'products': self.products}
-        return render(request, 'product/list.html', context)
 
-
-class ProductDetailView(DetailView):
-    model = Product
-    template_name = 'product/detail.html'
-
-    def get(self, request, id, slug):
-        self.product = get_object_or_404(self.model, id=id, slug=slug,
-                                         available=True)
-        context = {'product': self.product}
-        return render(request, 'product/detail.html', context)
+def product_detail(request, id, slug):
+    product = get_object_or_404(Product,
+                                id=id,
+                                slug=slug,
+                                available=True)
+    cart_product_form = CartAddProductForm()
+    return render(request,
+                  'shop/product/detail.html',
+                  {'product': product,
+                   'cart_product_form': cart_product_form})
